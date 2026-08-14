@@ -1,0 +1,22 @@
+# ---- NBA Strategy Recommender API : Python 3.10 or 3.11 recommended ----
+# Web layer
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+python-multipart==0.0.20
+
+# ML / pipeline (must match the versions your models were trained/pickled with)
+# NOTE: scikit-learn and xgboost pickles are version-sensitive. If you get an
+# "InconsistentVersionWarning" or an unpickling error, install the exact
+# versions you trained with instead of these.
+torch==2.5.1
+xgboost==2.1.3
+scikit-learn==1.6.0
+numpy==2.2.1
+pandas==2.2.3
+scipy==1.15.0
+joblib==1.4.2
+
+# Visualization (GIF rendering)
+matplotlib==3.10.0
+pillow==11.1.0

@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Play Designer — NBA Strategy Recommender</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1420; --panel:#161C2A; --panel-2:#1E2636; --line:#2A3346;
+    --hardwood:#C89B6B; --hardwood-line:#F2EAD8;
+    --chalk:#E8E4D8; --muted:#8592A8;
+    --off:#3B82F6; --def:#EF4444; --ball:#F59E0B;
+    --make:#39FF6A; --miss:#FF5A5A;
+    --accent:#5EE0C8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(94,224,200,.06), transparent 60%),
+      var(--bg);
+    color:var(--chalk);
+    font-family:'Archivo',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.4;
+  }
+  .wrap{max-width:1280px;margin:0 auto;padding:28px 24px 60px}
+
+  header{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;
+    border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px}
+  header .eyebrow{font-family:'IBM Plex Mono',monospace;font-size:11px;
+    letter-spacing:.28em;text-transform:uppercase;color:var(--accent)}
+  h1{font-size:30px;font-weight:800;letter-spacing:-.01em;line-height:1}
+  header p{color:var(--muted);font-size:13px;max-width:44ch}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+    gap:22px;align-items:start}
+  @media(max-width:940px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:18px}
+  .card h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;margin-bottom:14px;
+    display:flex;align-items:center;gap:8px}
+  .card h2 .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+
+  /* court */
+  .court-wrap{position:relative;width:100%;aspect-ratio:47/50;
+    border-radius:10px;overflow:hidden;background:var(--hardwood);
+    border:1px solid rgba(0,0,0,.35);cursor:crosshair;touch-action:none}
+  .court-wrap svg{position:absolute;inset:0;width:100%;height:100%}
+  .token{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;
+    border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:12px;
+    color:#fff;cursor:grab;user-select:none;touch-action:none;
+    box-shadow:0 2px 6px rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.85);
+    transition:transform .08s ease}
+  .token:active{cursor:grabbing;transform:scale(1.12)}
+  .token.off{background:var(--off)}
+  .token.def{background:var(--def);border-radius:6px}
+  .token.ball{width:20px;height:20px;margin:-10px 0 0 -10px;background:var(--ball);
+    border-color:#fff;z-index:5}
+  /* inactive (auto-filled) slots -- faint, still draggable to activate */
+  .token.ghost{opacity:.30;filter:saturate(.4);border-style:dashed}
+  /* the ball rides the current handler as an amber pip on their shoulder */
+  .token .ballpip{position:absolute;top:-6px;right:-6px;width:12px;height:12px;
+    border-radius:50%;background:var(--ball);border:2px solid #fff;
+    box-shadow:0 0 0 2px rgba(245,158,11,.35)}
+  .token.handler{box-shadow:0 0 0 3px rgba(245,158,11,.6),0 2px 6px rgba(0,0,0,.4)}
+  .qmark{display:inline-flex;align-items:center;justify-content:center;
+    width:14px;height:14px;border-radius:50%;background:var(--panel-2);
+    border:1px solid var(--line);font-size:9px;color:var(--muted);cursor:help;
+    vertical-align:middle}
+  .readout{background:var(--panel-2);border:1px solid var(--line);
+    border-radius:8px;padding:9px 11px;font-family:'IBM Plex Mono',monospace;
+    font-size:12px;color:var(--accent)}
+  .roster-row{display:flex;gap:12px}
+  .roster-pill{flex:1;display:flex;align-items:center;gap:9px;
+    background:var(--panel-2);border:1px solid var(--line);border-radius:8px;
+    padding:7px 11px;font-family:'IBM Plex Mono',monospace;font-size:12px}
+  .roster-pill span{color:var(--muted);flex:1}
+  .roster-pill b{min-width:14px;text-align:center;font-size:14px}
+  .roster-pill .step{width:24px;height:24px;border-radius:6px;border:1px solid var(--line);
+    background:var(--panel);color:var(--chalk);cursor:pointer;font-size:15px;
+    line-height:1;display:flex;align-items:center;justify-content:center;transition:.12s}
+  .roster-pill .step:hover{border-color:var(--accent);color:var(--accent)}
+  .roster-note{font-family:'IBM Plex Mono',monospace;font-size:10.5px;
+    color:var(--muted);margin-top:8px;line-height:1.5}
+  .seg.wrap6{display:flex;flex-wrap:wrap;gap:6px}
+  .seg.wrap6 button{flex:1 1 30%}
+  .fb-note{margin-top:12px;padding:11px 13px;border-radius:9px;
+    background:rgba(94,224,200,.07);border:1px solid rgba(94,224,200,.25);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;
+    color:var(--muted)}
+  .fb-note b{color:var(--accent);font-weight:600}
+  .token.transit{outline:2px dashed rgba(133,146,168,.7);outline-offset:2px}
+  .hint{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);
+    margin-top:10px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .swatch{display:inline-flex;align-items:center;gap:5px}
+  .swatch i{width:9px;height:9px;border-radius:50%}
+  .swatch i.o{background:var(--off)} .swatch i.d{background:var(--def);border-radius:2px}
+  .swatch i.b{background:var(--ball)}
+
+  /* controls */
+  .field{margin-bottom:15px}
+  .field label{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+  .seg{display:flex;gap:6px;flex-wrap:wrap}
+  .seg button{flex:1;min-width:fit-content;background:var(--panel-2);
+    border:1px solid var(--line);color:var(--chalk);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;
+    padding:9px 10px;border-radius:8px;cursor:pointer;transition:.12s;white-space:nowrap}
+  .seg button:hover{border-color:var(--accent)}
+  .seg button[aria-pressed="true"]{background:var(--accent);color:#06231d;
+    border-color:var(--accent);font-weight:600}
+  select,input[type=number]{width:100%;background:var(--panel-2);
+    border:1px solid var(--line);color:var(--chalk);padding:9px 11px;
+    border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:13px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .toggle-row{display:flex;gap:16px;flex-wrap:wrap;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--muted)}
+  .toggle-row label{display:flex;align-items:center;gap:7px;cursor:pointer}
+  .toggle-row input{accent-color:var(--accent);width:15px;height:15px}
+
+  .run{width:100%;margin-top:6px;background:linear-gradient(180deg,var(--accent),#3fbfa8);
+    color:#06231d;border:none;font-family:'Archivo';font-weight:800;font-size:15px;
+    letter-spacing:.02em;padding:14px;border-radius:10px;cursor:pointer;
+    transition:.15s;box-shadow:0 4px 14px rgba(94,224,200,.25)}
+  .run:hover{filter:brightness(1.06)}
+  .run:disabled{opacity:.55;cursor:wait;box-shadow:none}
+  .runrow{display:flex;gap:10px;align-items:stretch}
+  .runrow .run{flex:1;margin-top:6px}
+  .reset{margin-top:6px;flex:0 0 auto;background:var(--panel-2);
+    border:1px solid var(--line);color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;
+    padding:0 16px;border-radius:10px;cursor:pointer;transition:.12s}
+  .reset:hover{color:var(--miss);border-color:var(--miss)}
+  .stale{margin-top:10px;padding:9px 12px;border-radius:8px;
+    background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);
+    color:#F5B84D;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    line-height:1.5}
+  .filmroom{flex-direction:column;gap:0}
+  .filmlabel{width:100%;padding:7px 12px;font-family:'IBM Plex Mono',monospace;
+    font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+    background:var(--panel-2);border-bottom:1px solid var(--line)}
+  .filmlabel.bad{color:var(--miss)} .filmlabel.alt{color:var(--accent);
+    border-top:1px solid var(--line)}
+  .presets{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+  .presets button{background:none;border:1px dashed var(--line);color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;padding:6px 10px;
+    border-radius:20px;cursor:pointer;transition:.12s}
+  .presets button:hover{color:var(--accent);border-color:var(--accent)}
+
+  /* results */
+  .filmroom{min-height:120px;display:flex;align-items:center;justify-content:center;
+    background:#0B0F18;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .filmroom img{width:100%;display:block}
+  .filmroom .placeholder{color:var(--muted);font-family:'IBM Plex Mono',monospace;
+    font-size:12px;text-align:center;padding:40px 20px}
+  .verdict{margin:14px 0 4px;padding:13px 15px;border-radius:10px;
+    border:1px solid var(--line);background:var(--panel-2)}
+  .verdict .headline{font-size:20px;font-weight:800;letter-spacing:-.01em}
+  .verdict .sub{font-family:'IBM Plex Mono',monospace;font-size:12px;
+    color:var(--muted);margin-top:4px}
+  .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+    background:var(--line);border:1px solid var(--line);border-radius:10px;
+    overflow:hidden;margin-top:12px}
+  .stat{background:var(--panel);padding:11px 8px;text-align:center}
+  .stat .k{font-family:'IBM Plex Mono',monospace;font-size:10px;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .stat .v{font-size:18px;font-weight:700;font-family:'IBM Plex Mono',monospace;margin-top:3px}
+
+  .board{margin-top:16px}
+  .bar{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+  .bar .nm{width:104px;font-family:'IBM Plex Mono',monospace;font-size:11px;
+    color:var(--chalk);flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bar .track{flex:1;height:16px;background:var(--panel-2);border-radius:4px;overflow:hidden}
+  .bar .fill{height:100%;background:linear-gradient(90deg,#2a3f6a,var(--off));
+    border-radius:4px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .bar.best .fill{background:linear-gradient(90deg,#2f8a6a,var(--make))}
+  .bar .val{width:46px;text-align:right;font-family:'IBM Plex Mono',monospace;
+    font-size:11px;color:var(--muted)}
+  .bar.best .val{color:var(--make)}
+
+  .err{color:var(--miss);font-family:'IBM Plex Mono',monospace;font-size:12px;
+    margin-top:10px}
+  footer{margin-top:34px;text-align:center;color:var(--muted);
+    font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.05em}
+  .chain{font-family:'IBM Plex Mono',monospace}
+  .chain b{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div style="flex:1 1 320px">
+      <div class="eyebrow">SportVU-trained · 2015–16 · 632 games</div>
+      <h1>Play Designer</h1>
+    </div>
+    <p>Drag the ten players and the ball onto the half court, choose how each side plays, and the model simulates the possession and grades the shot.</p>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: court + controls -->
+    <div>
+      <div class="card">
+        <h2><span class="dot"></span>The floor</h2>
+        <div class="presets" id="presets">
+          <button data-p="balanced">Balanced set</button>
+          <button data-p="rim">Ball at the rim</button>
+          <button data-p="transition">Transition</button>
+          <button data-p="iso">Wing iso</button>
+        </div>
+        <div class="court-wrap" id="court">
+          <svg viewBox="0 0 470 500" preserveAspectRatio="none" id="courtlines"></svg>
+        </div>
+        <div class="hint">
+          <span>Attacking the <b>left</b> rim ● · <b>double-click</b> a player to give them the ball</span>
+          <span>
+            <span class="swatch"><i class="o"></i>Offense</span>&nbsp;
+            <span class="swatch"><i class="d"></i>Defense</span>&nbsp;
+            <span class="swatch"><i class="b"></i>Ball carrier</span>
+          </span>
+        </div>
+        <div class="fb-note" id="fb-note" style="display:none">
+          <b>Fast-break staging.</b> Place players anywhere on the full court.
+          The model was trained on half-court offense, so anyone past the center
+          line is treated as <b>arriving in transition</b>: they animate into the
+          play, but the model picks up the possession once it reaches its
+          territory (the shaded left half). The strategy and shot grade come from
+          that half-court read.
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:18px">
+        <h2><span class="dot"></span>Game plan</h2>
+
+        <div class="field">
+          <label>Offensive strategy</label>
+          <div class="seg wrap6" id="strategy"></div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Shot type</label>
+            <div class="seg" id="offmode"></div>
+          </div>
+          <div class="field">
+            <label>Defensive scheme</label>
+            <div class="seg" id="defpreset"></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label title="Possession pacing. Quick: ≤3 dribbles per touch, a shot goes up within ~6 seconds. Patient: 3–5 dribbles per touch and no shot in the first 4 seconds — the play develops. Milk clock: the ball swings and nobody shoots until the shot clock is inside 5 seconds.">Tempo <span class="qmark">?</span></label>
+          <div class="seg" id="tempo"></div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Shot clock (s)</label>
+            <input type="number" id="clock" value="19" min="1" max="24" step="0.5">
+          </div>
+          <div class="field">
+            <label title="How spread out your offense is: the average distance between your players, in feet. Wider spacing generally means cleaner looks. Computed from where you place players — you don't set it.">Spacing <span class="qmark">?</span></label>
+            <div class="readout" id="spacing-readout">auto · place players</div>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Roster on the floor</label>
+          <div class="roster-row">
+            <div class="roster-pill">
+              <span>Offense</span>
+              <button class="step" data-team="off" data-d="-1">–</button>
+              <b id="off-count">5</b>
+              <button class="step" data-team="off" data-d="1">+</button>
+            </div>
+            <div class="roster-pill">
+              <span>Defense</span>
+              <button class="step" data-team="def" data-d="-1">–</button>
+              <b id="def-count">5</b>
+              <button class="step" data-team="def" data-d="1">+</button>
+            </div>
+          </div>
+          <div class="roster-note" id="roster-note"></div>
+        </div>
+
+        <div class="field">
+          <div class="toggle-row">
+            <label><input type="checkbox" id="fastbreak">Fast break</label>
+            <label><input type="checkbox" id="screen">Screen set</label>
+            <label><input type="checkbox" id="overload">Defensive overload</label>
+            <label><input type="checkbox" id="gif" checked>Render film</label>
+          </div>
+        </div>
+
+        <div class="runrow">
+          <button class="run" id="run">Run the possession</button>
+          <button class="reset" id="reset" title="Clear the floor, options and film back to defaults">Reset all</button>
+        </div>
+        <div class="stale" id="stale" style="display:none">
+          Floor or plan changed — the film on the right is from the previous
+          setup. Run the possession again to refresh.
+        </div>
+        <div class="err" id="err"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: film + verdict + board -->
+    <div>
+      <div class="card">
+        <h2><span class="dot"></span>Film room</h2>
+        <div class="filmroom" id="film">
+          <div class="placeholder">Set the floor, then run a possession.<br>The simulated play renders here.</div>
+        </div>
+
+        <div id="verdict"></div>
+
+        <div class="stat-strip" id="stats" style="display:none">
+          <div class="stat"><div class="k">Exp. pts</div><div class="v" id="s-ev">–</div></div>
+          <div class="stat"><div class="k">Shot P</div><div class="v" id="s-p">–</div></div>
+          <div class="stat"><div class="k">Passes</div><div class="v" id="s-pass">–</div></div>
+          <div class="stat"><div class="k">Steps</div><div class="v" id="s-step">–</div></div>
+        </div>
+
+        <div class="board" id="board"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Model output is a simulation, not a guarantee — rerun for a different roll of the possession.</footer>
+</div>
+
+<script>
+const API = "";                     // same origin
+const HALF_W = 47.0, FULL_W = 94.0, CH = 50.0;
+let CW = HALF_W;                    // flips to FULL_W in fast-break mode
+let fullCourt = false;             // whether the whole floor is shown
+
+// ---- court model ----
+// offense[5]/defense[5] in FEET. A slot is "active" (placed by the user) or
+// auto-filled. ballHandler is an INDEX into offense (double-click to set) --
+// the ball is drawn on whoever holds it, not dragged as its own token.
+const SLOT_DEFAULTS = {
+  offense: [[22,25],[15,10],[15,40],[8,8],[8,42]],
+  defense: [[25,25],[17,11],[17,39],[10,9],[10,41]],
+};
+let state = {
+  offense: SLOT_DEFAULTS.offense.map(p=>p.slice()),
+  defense: SLOT_DEFAULTS.defense.map(p=>p.slice()),
+  offActive: [true,true,true,true,true],   // which offense slots are in play
+  defActive: [true,true,true,true,true],
+  ballHandler: 0,                          // index into offense
+};
+const PRESETS = {
+  balanced:{offense:[[22,25],[15,10],[15,40],[8,8],[8,42]],
+            defense:[[25,25],[17,11],[17,39],[10,9],[10,41]],handler:0},
+  rim:{offense:[[9,22],[8,8],[8,42],[20,14],[20,36]],
+       defense:[[7,23],[9.5,10],[9.5,40],[17,16],[17,34]],handler:0},
+  transition:{offense:[[22,25],[12,15],[12,35],[28,20],[28,30]],
+              defense:[[18,25],[10,20],[10,30],[30,22],[32,28]],handler:0},
+  iso:{offense:[[16,12],[10,40],[14,45],[10,8],[18,30]],
+       defense:[[18,13],[11,39],[15,44],[11,9],[19,29]],handler:0},
+};
+
+// ---- draw court lines (SVG coords: feet*10) ----
+function drawCourt(){
+  const s = document.getElementById('courtlines');
+  const svg = document.getElementById('courtlines');
+  const L = 'stroke="#F2EAD8" stroke-width="2" fill="none" opacity="0.9"';
+  const W = CW*10;                                  // 470 half, 940 full
+  svg.setAttribute('viewBox', `0 0 ${W} 500`);
+  // offensive (left) half — the model's territory — always drawn solid
+  let html = `
+    <rect x="2" y="2" width="${W-4}" height="496" ${L}/>
+    <rect x="2" y="170" width="190" height="160" ${L}/>
+    <circle cx="192" cy="250" r="60" ${L}/>
+    <path d="M 52 210 A 40 40 0 0 1 52 290" ${L}/>
+    <circle cx="52" cy="250" r="7.5" stroke="#F2EAD8" stroke-width="2" fill="none"/>
+    <line x1="20" y1="250" x2="44" y2="250" ${L}/>
+    <line x1="2" y1="30" x2="88" y2="30" ${L}/>
+    <line x1="2" y1="470" x2="88" y2="470" ${L}/>
+    <path d="M 88 30 A 237 237 0 0 1 88 470" ${L}/>`;
+  if(!fullCourt){
+    html += `
+      <line x1="470" y1="2" x2="470" y2="498" ${L}/>
+      <circle cx="470" cy="250" r="60" ${L} opacity="0.4"/>`;
+  } else {
+    // full court: center line + circle at x=47ft(=470), mirrored back-court
+    html += `
+      <line x1="470" y1="2" x2="470" y2="498" stroke="#F2EAD8" stroke-width="2" opacity="0.55"/>
+      <circle cx="470" cy="250" r="60" ${L}/>
+      <!-- back-court hoop + paint mirrored about x=470 -->
+      <rect x="${W-192}" y="170" width="190" height="160" ${L} opacity="0.5"/>
+      <circle cx="${W-192}" cy="250" r="60" ${L} opacity="0.5"/>
+      <circle cx="${W-52}" cy="250" r="7.5" stroke="#F2EAD8" stroke-width="2" fill="none" opacity="0.5"/>
+      <line x1="${W-88}" y1="30" x2="${W-2}" y2="30" ${L} opacity="0.5"/>
+      <line x1="${W-88}" y1="470" x2="${W-2}" y2="470" ${L} opacity="0.5"/>
+      <path d="M ${W-88} 30 A 237 237 0 0 0 ${W-88} 470" ${L} opacity="0.5"/>
+      <!-- shaded 'model territory' band on the offensive half -->
+      <rect x="2" y="2" width="468" height="496" fill="#5EE0C8" opacity="0.05"/>
+      <text x="240" y="26" fill="#5EE0C8" opacity="0.6" font-size="15"
+            font-family="monospace" text-anchor="middle">MODEL TERRITORY</text>
+      <text x="700" y="26" fill="#8592A8" opacity="0.7" font-size="15"
+            font-family="monospace" text-anchor="middle">TRANSITION (approach only)</text>`;
+  }
+  svg.innerHTML = html;
+}
+drawCourt();
+
+// ---- feet <-> pixel mapping inside the court box ----
+// NOTE ON Y: court coordinates are MATH convention (y grows UP, like the
+// matplotlib film), but the browser's `top` grows DOWN. Both converters
+// flip y so what you place here is exactly what the animation shows --
+// previously the film was a vertical mirror of the floor you set.
+const court = document.getElementById('court');
+function ftToPct(x,y){ return { left:(x/CW)*100, top:((CH-y)/CH)*100 }; }
+function pxToFt(px,py){
+  const r = court.getBoundingClientRect();
+  let x = ((px - r.left)/r.width)*CW;
+  let y = CH - ((py - r.top)/r.height)*CH;
+  x = Math.max(0.5, Math.min(CW-0.5, x));
+  y = Math.max(0.5, Math.min(49.5, y));
+  return [Math.round(x*10)/10, Math.round(y*10)/10];
+}
+
+// ---- render tokens ----
+function renderTokens(){
+  court.querySelectorAll('.token').forEach(t=>t.remove());
+  const mk=(cls,label,x,y,kind,idx,active,isHandler)=>{
+    const d=document.createElement('div');
+    const transit = fullCourt && x > HALF_W;
+    d.className=`token ${cls}${active?'':' ghost'}${isHandler?' handler':''}`+
+                `${transit?' transit':''}`;
+    d.textContent=label;
+    const p=ftToPct(x,y); d.style.left=p.left+'%'; d.style.top=p.top+'%';
+    d.dataset.kind=kind; d.dataset.idx=idx;
+    // ball rides the offensive handler
+    if(isHandler){
+      const b=document.createElement('span'); b.className='ballpip'; d.appendChild(b);
+    }
+    court.appendChild(d); attachDrag(d);
+    if(kind==='off'){
+      d.addEventListener('dblclick',()=>{ state.ballHandler=idx;
+        if(!state.offActive[idx]) state.offActive[idx]=true;
+        renderTokens(); syncRoster(); markStale(); });
+    }
+  };
+  state.offense.forEach((p,i)=>mk('off',i+1,p[0],p[1],'off',i,
+      state.offActive[i], i===state.ballHandler && state.offActive[i]));
+  state.defense.forEach((p,i)=>mk('def',i+1,p[0],p[1],'def',i,
+      state.defActive[i], false));
+}
+function attachDrag(el){
+  let dragging=false, moved=false;
+  const down=e=>{dragging=true;moved=false; el.setPointerCapture(e.pointerId); e.preventDefault();};
+  const move=e=>{ if(!dragging)return; moved=true;
+    const ft=pxToFt(e.clientX,e.clientY);
+    const k=el.dataset.kind, i=+el.dataset.idx;
+    state[k==='off'?'offense':'defense'][i]=ft;
+    // dragging a ghost activates that slot
+    if(k==='off' && !state.offActive[i]){state.offActive[i]=true; el.classList.remove('ghost'); syncRoster();}
+    if(k==='def' && !state.defActive[i]){state.defActive[i]=true; el.classList.remove('ghost'); syncRoster();}
+    const p=ftToPct(ft[0],ft[1]); el.style.left=p.left+'%'; el.style.top=p.top+'%';
+  };
+  const up=e=>{ if(dragging && moved){ syncRoster(); markStale(); }
+    dragging=false; try{el.releasePointerCapture(e.pointerId)}catch(_){} };
+  el.addEventListener('pointerdown',down);
+  el.addEventListener('pointermove',move);
+  el.addEventListener('pointerup',up);
+  el.addEventListener('pointercancel',up);
+}
+renderTokens();
+
+// ---- roster: how many players are "on the floor" per side ----
+// The model needs exactly 5+5. The user activates only the players they care
+// about; inactive slots ride along at sensible auto-fill spots (dimmed on the
+// court) and are sent to the API so tensor shapes stay valid.
+function countActive(team){ return state[team].filter(Boolean).length; }
+function syncRoster(){
+  const oc=countActive('offActive'), dc=countActive('defActive');
+  document.getElementById('off-count').textContent=oc;
+  document.getElementById('def-count').textContent=dc;
+  const note=document.getElementById('roster-note');
+  if(oc<5||dc<5){
+    note.textContent=`Sending 5v5 to the model — the ${(5-oc)+(5-dc)} `+
+      `empty slot(s) are parked at the far edge of the floor (dimmed), `+
+      `out of the play. Drag a dimmed token to bring it back in.`;
+  } else note.textContent='';
+  const act=state.offense.filter((_,i)=>state.offActive[i]);
+  document.getElementById('spacing-readout').textContent=
+    act.length>=2 ? `${meanPairwise(act).toFixed(1)} ft avg spread` : 'place players';
+}
+function meanPairwise(pts){
+  let s=0,n=0;
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    s+=Math.hypot(pts[i][0]-pts[j][0],pts[i][1]-pts[j][1]); n++;}
+  return n? s/n : 20;
+}
+// Deactivated slots are PARKED at the far edge of the floor (max distance
+// from the basket the model allows) instead of keeping their last set
+// coordinates -- so a "3v3" doesn't secretly run 5v5 in the original spots.
+// Re-activating (via + or dragging the ghost) restores a sensible default.
+const PARK_Y = [6, 16, 25, 34, 44];
+function parkSpot(i){ return [CW - 1.5, PARK_Y[i]]; }
+function parkInactive(){
+  for(let i=0;i<5;i++){
+    if(!state.offActive[i]) state.offense[i] = parkSpot(i);
+    if(!state.defActive[i]) state.defense[i] = parkSpot(i);
+  }
+}
+document.querySelectorAll('.step').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const team=btn.dataset.team==='off'?'offActive':'defActive';
+    const arr =btn.dataset.team==='off'?'offense':'defense';
+    const d=+btn.dataset.d, cur=countActive(team);
+    if(d>0){ const i=state[team].indexOf(false);
+      if(i>=0){ state[team][i]=true;
+        state[arr][i]=SLOT_DEFAULTS[arr][i].slice(); } }
+    else { if(cur<=1) return;
+      for(let i=4;i>=0;i--){ if(state[team][i]){
+        if(team==='offActive'&&i===state.ballHandler){ continue; }
+        state[team][i]=false;
+        state[arr][i]=parkSpot(i);
+        break; } }
+    }
+    renderTokens(); syncRoster(); markStale();
+  });
+});
+syncRoster();
+
+// ---- fast-break toggle: expand to the full court for staging ----
+function setFullCourt(on){
+  fullCourt = on;
+  CW = on ? FULL_W : HALF_W;
+  const wrap = document.querySelector('.court-wrap');
+  wrap.style.aspectRatio = `${CW}/${CH}`;
+  const fix = arr => arr.forEach(p=>{ p[0]=Math.min(CW-0.5, Math.max(0.5, p[0])); });
+  fix(state.offense); fix(state.defense);
+  parkInactive();                       // park spots follow the court width
+  drawCourt(); renderTokens(); syncRoster();
+  document.getElementById('fb-note').style.display = on ? 'block' : 'none';
+}
+document.getElementById('fastbreak').addEventListener('change', e=>{
+  setFullCourt(e.target.checked); markStale();
+});
+
+// ---- presets ----
+document.getElementById('presets').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  const p=PRESETS[b.dataset.p]; if(!p)return;
+  state.offense=p.offense.map(x=>x.slice());
+  state.defense=p.defense.map(x=>x.slice());
+  state.offActive=[true,true,true,true,true];
+  state.defActive=[true,true,true,true,true];
+  state.ballHandler=p.handler;
+  renderTokens(); syncRoster(); markStale();
+});
+
+// ---- stale tracking: any change after a run flags the film as outdated ----
+let hasResult=false;
+function markStale(){
+  document.getElementById('stale').style.display = hasResult ? 'block' : 'none';
+}
+function clearStale(){ document.getElementById('stale').style.display='none'; }
+
+// ---- segmented controls (built from /api/options) ----
+function buildSeg(containerId, items, initial){
+  const c=document.getElementById(containerId);
+  c.innerHTML='';
+  items.forEach((it,idx)=>{
+    const b=document.createElement('button');
+    b.dataset.v=it.id; b.textContent=it.label;
+    b.setAttribute('aria-pressed', String(it.id===initial));
+    b.onclick=()=>{ c.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed','true'); markStale(); };
+    c.appendChild(b);
+  });
+}
+function setSeg(id, val){
+  document.querySelectorAll(`#${id} button`).forEach(b=>
+    b.setAttribute('aria-pressed', String(b.dataset.v===val)));
+}
+function segValue(id){
+  const b=document.querySelector(`#${id} button[aria-pressed="true"]`);
+  return b? b.dataset.v : null;
+}
+let STRATS=[];
+async function loadOptions(){
+  try{
+    const o=await (await fetch(API+"/api/options")).json();
+    STRATS=o.strategies;
+    // strategy: Auto + each of 6, all selectable (single-select segmented)
+    const sc=document.getElementById('strategy'); sc.innerHTML='';
+    const pick=(btn)=>{ sc.querySelectorAll('button')
+        .forEach(x=>x.setAttribute('aria-pressed','false'));
+      btn.setAttribute('aria-pressed','true'); markStale(); };
+    const add=(v,l,pressed)=>{ const b=document.createElement('button');
+      b.dataset.v=v; b.textContent=l;
+      b.setAttribute('aria-pressed',String(pressed));
+      b.addEventListener('click',()=>pick(b)); sc.appendChild(b); };
+    add('auto','Auto (best)',true);
+    o.strategies.forEach(s=>add(String(s.id),s.name,false));
+    buildSeg('offmode', o.offense_modes.map(m=>({id:m.id,label:m.label.replace(/ \(.*\)/,'')})), 'normal');
+    buildSeg('defpreset', o.defense_presets.map(m=>({id:m.id,label:m.label.replace(/ \(.*\)/,'')})), 'normal');
+    if(o.tempos) buildSeg('tempo', o.tempos, 'default');
+  }catch(err){ document.getElementById('err').textContent =
+    "Can't reach the API. Is the server running?"; }
+}
+loadOptions();
+
+// ---- run ----
+const $=id=>document.getElementById(id);
+$('run').addEventListener('click', run);
+
+// any remaining inputs also flag stale results
+['clock','screen','overload','gif'].forEach(id=>
+  $(id).addEventListener('change', markStale));
+
+// ---- reset everything back to first-load state ----
+function resetAll(){
+  state.offense=SLOT_DEFAULTS.offense.map(p=>p.slice());
+  state.defense=SLOT_DEFAULTS.defense.map(p=>p.slice());
+  state.offActive=[true,true,true,true,true];
+  state.defActive=[true,true,true,true,true];
+  state.ballHandler=0;
+  $('clock').value=19;
+  $('screen').checked=false; $('overload').checked=false;
+  $('gif').checked=true;
+  $('fastbreak').checked=false; setFullCourt(false);
+  setSeg('strategy','auto'); setSeg('offmode','normal');
+  setSeg('defpreset','normal'); setSeg('tempo','default');
+  // clear results
+  hasResult=false; clearStale(); $('err').textContent='';
+  $('film').innerHTML='<div class="placeholder">Set the floor, then run a possession.<br>The simulated play renders here.</div>';
+  $('verdict').innerHTML=''; $('board').innerHTML='';
+  $('stats').style.display='none';
+  renderTokens(); syncRoster();
+}
+$('reset').addEventListener('click', resetAll);
+async function run(){
+  const btn=$('run'); const err=$('err'); err.textContent='';
+  btn.disabled=true; btn.textContent='Simulating…';
+  const strat=segValue('strategy');
+  // ball = wherever the handler stands. Full 5-long arrays are always sent
+  // (auto-filled slots included) so the model's fixed 5v5 shapes hold.
+  const ball = state.offense[state.ballHandler];
+  const body={
+    offense:state.offense, defense:state.defense, ball:ball,
+    strategy: strat==='auto'? null : parseInt(strat),
+    offense_mode: segValue('offmode')||'normal',
+    defense_preset: segValue('defpreset')||'normal',
+    tempo: segValue('tempo')||'default',
+    shot_clock: parseFloat($('clock').value)||19,
+    spacing_score: null,                 // let the API compute it from positions
+    is_fast_break: $('fastbreak').checked,
+    full_court: fullCourt,               // Option A: staged full-court fast break
+    screen_detected: $('screen').checked,
+    defensive_overload: $('overload').checked,
+    make_gif: $('gif').checked,
+  };
+  try{
+    const res=await fetch(API+"/api/simulate",{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(!res.ok){ const t=await res.json().catch(()=>({detail:res.statusText}));
+      throw new Error(typeof t.detail==='string'?t.detail:JSON.stringify(t.detail)); }
+    const d=await res.json(); paint(d); hasResult=true; clearStale();
+  }catch(e){ err.textContent = e.message; }
+  finally{ btn.disabled=false; btn.textContent='Run the possession'; }
+}
+
+function paint(d){
+  // film: on a turnover the API also returns the counterfactual replay
+  // (same seed, the picked pass forced to complete) -- show both.
+  const film=$('film');
+  const t=Date.now();
+  if(d.gif_url && d.gif_url_counterfactual){
+    film.innerHTML=
+      `<div class="filmlabel bad">As played — turnover</div>
+       <img src="${d.gif_url}?t=${t}" alt="Simulated play (turnover)">
+       <div class="filmlabel alt">Another possession — same strategy, ran to a shot</div>
+       <img src="${d.gif_url_counterfactual}?t=${t}" alt="Alternate possession">`;
+  }
+  else if(d.gif_url){ film.innerHTML=`<img src="${d.gif_url}?t=${t}" alt="Simulated play">`; }
+  else { film.innerHTML=`<div class="placeholder">Film off — turn on “Render film” to see the play.</div>`; }
+
+  // verdict
+  const v=$('verdict');
+  let head, col, sub;
+  if(d.turnover){ head='TURNOVER'; col='var(--miss)';
+    sub=d.reason||'Possession lost'; }
+  else if(d.made){ head=`BUCKET · ${d.points} PTS`; col='var(--make)';
+    sub=`${STRATS[d.recommended_strategy]?.name||d.recommended_name} · shot P=${(d.shot_p??0).toFixed(3)}`; }
+  else { head='MISS'; col='var(--miss)';
+    sub=`${d.recommended_name} · shot P=${(d.shot_p??0).toFixed(3)}`; }
+  const chain = d.ball_chain.map(j=>`A${j+1}`).join(' → ');
+  if(d.tempo && d.tempo!=='default') sub += ` · tempo: ${d.tempo.replace('_',' ')}`;
+  const transLine = (d.transition && d.transition.length)
+    ? `<div class="sub">${d.transition.length} player(s) arrived in transition — model read the half-court finish</div>`
+    : '';
+  let cfLine='';
+  if(d.turnover && d.counterfactual){
+    const c=d.counterfactual;
+    const res=c.made ? `BUCKET · ${c.points} pts` : 'a MISS';
+    cfLine=`<div class="sub">Another possession of this strategy ended in <b>${res}</b>`+
+           ` (shot P=${(c.shot_p??0).toFixed(3)})</div>`;
+  } else if(d.turnover){
+    cfLine=`<div class="sub">Every retried possession also turned it over — the setup is high-risk.</div>`;
+  }
+  v.innerHTML=`<div class="verdict">
+      <div class="headline" style="color:${col}">${head}</div>
+      <div class="sub">${sub}</div>
+      <div class="sub chain">Ball: ${chain.replace(/A\d+/g,m=>`<b>${m}</b>`)}</div>
+      ${cfLine}
+      ${transLine}
+    </div>`;
+
+  // stats
+  $('stats').style.display='grid';
+  $('s-ev').textContent=d.expected_points.toFixed(3);
+  $('s-p').textContent=(d.shot_p??0).toFixed(3);
+  $('s-pass').textContent=d.n_passes;
+  $('s-step').textContent=d.n_steps;
+  if(d.spacing_score!=null)
+    document.getElementById('spacing-readout').textContent=
+      `${d.spacing_score.toFixed(1)} ft avg spread`;
+
+  // ranking board
+  const board=$('board');
+  if(d.ranking && d.ranking.length>1){
+    const max=Math.max(...d.ranking.map(r=>r.median_ev),0.01);
+    board.innerHTML='<h2 style="margin:6px 0 12px"><span class="dot"></span>Strategy board · median EV</h2>'+
+      d.ranking.map((r,i)=>`
+        <div class="bar ${i===0?'best':''}">
+          <span class="nm">${r.name}</span>
+          <span class="track"><span class="fill" style="width:${Math.max(3,(r.median_ev/max)*100)}%"></span></span>
+          <span class="val">${r.median_ev.toFixed(2)}</span>
+        </div>`).join('');
+  } else { board.innerHTML=''; }
+}
+</script>
+</body>
+</html>
