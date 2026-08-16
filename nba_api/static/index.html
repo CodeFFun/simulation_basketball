@@ -9,18 +9,19 @@
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0F1420; --panel:#161C2A; --panel-2:#1E2636; --line:#2A3346;
-    --hardwood:#C89B6B; --hardwood-line:#F2EAD8;
-    --chalk:#E8E4D8; --muted:#8592A8;
-    --off:#3B82F6; --def:#EF4444; --ball:#F59E0B;
-    --make:#39FF6A; --miss:#FF5A5A;
-    --accent:#5EE0C8;
+    --bg:#F5F1E8; --panel:#FFFFFF; --panel-2:#F3EEE3; --line:#E3DBCB;
+    --hardwood:#D9A867; --hardwood-line:#FFFFFF;
+    --chalk:#1E2430; --muted:#7C7364;
+    --off:#2563EB; --def:#DC2626; --ball:#E8792B;
+    --make:#16A34A; --miss:#DC2626;
+    --accent:#E8792B;
+    --accent-ink:#FFFFFF;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
     background:
-      radial-gradient(1200px 600px at 80% -10%, rgba(94,224,200,.06), transparent 60%),
+      radial-gradient(1200px 600px at 80% -10%, rgba(232,121,43,.10), transparent 60%),
       var(--bg);
     color:var(--chalk);
     font-family:'Archivo',system-ui,sans-serif;
@@ -41,7 +42,8 @@
   @media(max-width:940px){.grid{grid-template-columns:1fr}}
 
   .card{background:var(--panel);border:1px solid var(--line);
-    border-radius:14px;padding:18px}
+    border-radius:14px;padding:18px;
+    box-shadow:0 1px 2px rgba(30,36,48,.04),0 8px 24px rgba(30,36,48,.06)}
   .card h2{font-size:12px;letter-spacing:.16em;text-transform:uppercase;
     color:var(--muted);font-weight:600;margin-bottom:14px;
     display:flex;align-items:center;gap:8px}
@@ -92,7 +94,7 @@
   .seg.wrap6{display:flex;flex-wrap:wrap;gap:6px}
   .seg.wrap6 button{flex:1 1 30%}
   .fb-note{margin-top:12px;padding:11px 13px;border-radius:9px;
-    background:rgba(94,224,200,.07);border:1px solid rgba(94,224,200,.25);
+    background:rgba(232,121,43,.08);border:1px solid rgba(232,121,43,.28);
     font-family:'IBM Plex Mono',monospace;font-size:11px;line-height:1.6;
     color:var(--muted)}
   .fb-note b{color:var(--accent);font-weight:600}
@@ -114,7 +116,7 @@
     font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;
     padding:9px 10px;border-radius:8px;cursor:pointer;transition:.12s;white-space:nowrap}
   .seg button:hover{border-color:var(--accent)}
-  .seg button[aria-pressed="true"]{background:var(--accent);color:#06231d;
+  .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);
     border-color:var(--accent);font-weight:600}
   select,input[type=number]{width:100%;background:var(--panel-2);
     border:1px solid var(--line);color:var(--chalk);padding:9px 11px;
@@ -125,10 +127,10 @@
   .toggle-row label{display:flex;align-items:center;gap:7px;cursor:pointer}
   .toggle-row input{accent-color:var(--accent);width:15px;height:15px}
 
-  .run{width:100%;margin-top:6px;background:linear-gradient(180deg,var(--accent),#3fbfa8);
-    color:#06231d;border:none;font-family:'Archivo';font-weight:800;font-size:15px;
+  .run{width:100%;margin-top:6px;background:var(--accent);
+    color:var(--accent-ink);border:none;font-family:'Archivo';font-weight:800;font-size:15px;
     letter-spacing:.02em;padding:14px;border-radius:10px;cursor:pointer;
-    transition:.15s;box-shadow:0 4px 14px rgba(94,224,200,.25)}
+    transition:.15s;box-shadow:0 4px 14px rgba(232,121,43,.30)}
   .run:hover{filter:brightness(1.06)}
   .run:disabled{opacity:.55;cursor:wait;box-shadow:none}
   .runrow{display:flex;gap:10px;align-items:stretch}
@@ -156,7 +158,7 @@
 
   /* results */
   .filmroom{min-height:120px;display:flex;align-items:center;justify-content:center;
-    background:#0B0F18;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+    background:var(--panel-2);border:1px solid var(--line);border-radius:10px;overflow:hidden}
   .filmroom img{width:100%;display:block}
   .filmroom .placeholder{color:var(--muted);font-family:'IBM Plex Mono',monospace;
     font-size:12px;text-align:center;padding:40px 20px}
@@ -371,7 +373,7 @@ const PRESETS = {
 function drawCourt(){
   const s = document.getElementById('courtlines');
   const svg = document.getElementById('courtlines');
-  const L = 'stroke="#F2EAD8" stroke-width="2" fill="none" opacity="0.9"';
+  const L = 'stroke="#FFFFFF" stroke-width="2" fill="none" opacity="0.95"';
   const W = CW*10;                                  // 470 half, 940 full
   svg.setAttribute('viewBox', `0 0 ${W} 500`);
   // offensive (left) half — the model's territory — always drawn solid
@@ -380,7 +382,7 @@ function drawCourt(){
     <rect x="2" y="170" width="190" height="160" ${L}/>
     <circle cx="192" cy="250" r="60" ${L}/>
     <path d="M 52 210 A 40 40 0 0 1 52 290" ${L}/>
-    <circle cx="52" cy="250" r="7.5" stroke="#F2EAD8" stroke-width="2" fill="none"/>
+    <circle cx="52" cy="250" r="7.5" stroke="#FFFFFF" stroke-width="2" fill="none"/>
     <line x1="20" y1="250" x2="44" y2="250" ${L}/>
     <line x1="2" y1="30" x2="88" y2="30" ${L}/>
     <line x1="2" y1="470" x2="88" y2="470" ${L}/>
@@ -392,20 +394,20 @@ function drawCourt(){
   } else {
     // full court: center line + circle at x=47ft(=470), mirrored back-court
     html += `
-      <line x1="470" y1="2" x2="470" y2="498" stroke="#F2EAD8" stroke-width="2" opacity="0.55"/>
+      <line x1="470" y1="2" x2="470" y2="498" stroke="#FFFFFF" stroke-width="2" opacity="0.6"/>
       <circle cx="470" cy="250" r="60" ${L}/>
       <!-- back-court hoop + paint mirrored about x=470 -->
-      <rect x="${W-192}" y="170" width="190" height="160" ${L} opacity="0.5"/>
-      <circle cx="${W-192}" cy="250" r="60" ${L} opacity="0.5"/>
-      <circle cx="${W-52}" cy="250" r="7.5" stroke="#F2EAD8" stroke-width="2" fill="none" opacity="0.5"/>
-      <line x1="${W-88}" y1="30" x2="${W-2}" y2="30" ${L} opacity="0.5"/>
-      <line x1="${W-88}" y1="470" x2="${W-2}" y2="470" ${L} opacity="0.5"/>
-      <path d="M ${W-88} 30 A 237 237 0 0 0 ${W-88} 470" ${L} opacity="0.5"/>
+      <rect x="${W-192}" y="170" width="190" height="160" ${L} opacity="0.55"/>
+      <circle cx="${W-192}" cy="250" r="60" ${L} opacity="0.55"/>
+      <circle cx="${W-52}" cy="250" r="7.5" stroke="#FFFFFF" stroke-width="2" fill="none" opacity="0.55"/>
+      <line x1="${W-88}" y1="30" x2="${W-2}" y2="30" ${L} opacity="0.55"/>
+      <line x1="${W-88}" y1="470" x2="${W-2}" y2="470" ${L} opacity="0.55"/>
+      <path d="M ${W-88} 30 A 237 237 0 0 0 ${W-88} 470" ${L} opacity="0.55"/>
       <!-- shaded 'model territory' band on the offensive half -->
-      <rect x="2" y="2" width="468" height="496" fill="#5EE0C8" opacity="0.05"/>
-      <text x="240" y="26" fill="#5EE0C8" opacity="0.6" font-size="15"
+      <rect x="2" y="2" width="468" height="496" fill="#E8792B" opacity="0.10"/>
+      <text x="240" y="26" fill="#B5561A" opacity="0.9" font-size="15"
             font-family="monospace" text-anchor="middle">MODEL TERRITORY</text>
-      <text x="700" y="26" fill="#8592A8" opacity="0.7" font-size="15"
+      <text x="700" y="26" fill="#5A4A36" opacity="0.85" font-size="15"
             font-family="monospace" text-anchor="middle">TRANSITION (approach only)</text>`;
   }
   svg.innerHTML = html;
